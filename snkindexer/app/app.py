@@ -56,7 +56,7 @@ if __name__ == "__main__":
 		try:
 			mqcli.connect(MQ_HOST)
 			mqcli.subscribe("snksensor/#") # subscribe to all snk* messages
-			mqcli.loop_forever()
+			mqcli.loop_forever(timeout=1)
 		except KeyboardInterrupt:
 			print('CTRL+C fired, exiting...')
 			sys.exit(1)
