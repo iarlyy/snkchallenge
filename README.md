@@ -82,12 +82,12 @@ We are not going to dive into SELinux policies for this demonstration
 # cd /opt/snkchallenge
 # docker-compose up -d
 ```
-Now you are be able to access the web interface:
+Now you are able to access the web interface:
 - http://SERVER_IP_ADDRESS:8080
 
 ### Automating and Scaling
 To automate all building process and introduce scaling to our project we are going to use Saltstack as orquestrator. 
-SaltStack is an orchestration and automation platform to manage all layers of the data center infrastructure. It can be used to manage and automate infrastructure and applications, Internet of things, dynamic storage, software-defined networking, server security, hardening and compliance, high performance computing and much more.
+SaltStack is an orchestration and automation platform to manage all layers of the data center infrastructure. It can be used to manage and automate infrastructure and applications, Internet of things, software-defined networking, server security, compliance and much more.
 
 A minimum saltstack infrastructure is composed by:
 - salt-master - Server side application responsible for compiling host states and triggering the enforcement of the states on the minions
@@ -95,11 +95,11 @@ A minimum saltstack infrastructure is composed by:
 
 It is still possible to implement saltstack without need of installing salt-minion on the clients, instead saltstack will use ssh to push the states to the clients.
 
-In our demonstration we are going to install only the salt-minion and make use of a tool called salt-call that enables us to execute/test states locally without the need of having a salt-master installed.
+In our demonstration we are going to install only the salt-minion to make use of a tool called salt-call that enables us to execute/test states locally without the need of having a salt-master installed and even the salt-minion running.
 
 Our sls(salt state file) contains the full definition of our virtual environment and its dependencies, after completed the installation of the salt-minion and the repository is downloaded, we will run only one command and everything will setup without additional intervention.
 
-****IMPORTANT: USE A FRESH AND DEDICATED INSTALL OF CENTOS 7.3****
+****IMPORTANT: USE A FRESH AND DEDICATED INSTALL OF CENTOS 7.3 WITHOUT ANY DOCKER COMPONENT INSTALLED****
 
 ###### Installing salt-minion
 #
@@ -127,15 +127,45 @@ EOF
 ```
 # salt-call --local state.apply --saltfile=/opt/snkchallenge/salt/snkchallenge.sls --file-root=/opt/snkchallenge/salt/ -l error
 ```
-Now you should be able to access the web interface:
+It takes a few minutes.
+
+Now you are able to access the web interface:
 - http://SERVER_IP_ADDRESS:8080
+
+If the number seen on the web interface is "-1", restart the sensors and the indexer:
+#
+```
+# docker restart snkindexer snksensor1 snksensor1
+```
+
+Or
+#
+```
+# salt-call --local dockerng.restart snkindexer --file-root=/opt/snkchallenge/salt/ -l error
+# salt-call --local dockerng.restart snksensor1 --file-root=/opt/snkchallenge/salt/ -l error
+# salt-call --local dockerng.restart snksensor2 --file-root=/opt/snkchallenge/salt/ -l error
+```
+Try again:
+- http://SERVER_IP_ADDRESS:8080
+
+See the known issues list for more details about this issue.
 
 ### Todo
  * Add method that enables data to be stored temporary on the sensor's disk in case of MQ broker failure
- * Create MQ object
+ * Create MQ class instead of using paho.mqtt straight
+ * Implement on_disconnect callback to fire events using a secondary method in case of MQ broker failure (Ex: RESTApi)
+ * Implement remaining mqtt callbacks (on_subscribe, on_publish, on_log) to have better application control
+ * Implement individual sensor queues on the broker, enabling it to receive messages from the indexer or other components in the network
+ * Implement QoS levels on the messages subscribing/sending process
+ * Move SQLite to a real relational or NoSQL database
+ * Install docker registry to be the primary repository of docker images
+ * Install Jenkins to automate the testing of pre-prod images
+ * Install NTP server on the network
+ * Install a salt server and implement salt-masterless architecture for host OS/containers provisioning and scaling
  
 ### Known issues
- * Indexer doesn't timeout the loop_forever and container must be restarted
+ * Indexer doesn't timeout the loop_forever and containers must be restarted
+ * MQ Broker is being provisioned after the apps, causing apps fail to connect and don't reconnect to it. 
  * Error downloading docker images from dockerhub when docker-compose is already installed on the host
 
 ### License
