@@ -1,0 +1,41 @@
+version: '3'
+services:
+  snkbroker:
+    container_name: snkbroker
+    image: toke/mosquitto
+    ports:
+      - "1883:1883"
+
+  snkweb:
+    container_name: snkweb
+    build: ./snkweb
+    image: snkweb:latest
+    volumes:
+      - /opt/dockerdata-snkdb:/opt/snkdb
+    ports:
+      - "8080:8080"
+
+  snkindexer:
+    container_name: snkindexer
+    build: ./snkindexer
+    image: snkindexer:latest
+    volumes:
+      - /opt/dockerdata-snkdb:/opt/snkdb
+    environment:
+      MQHOST: snkbroker
+
+  snksensor1:
+    container_name: sensor1
+    build: ./snksensor
+    image: snksensor:latest
+    environment:
+      SENSOR_ID: sensor1
+      MQHOST: snkbroker
+
+  snksensor2:
+    container_name: sensor2
+    build: ./snksensor
+    image: snksensor:latest
+    environment:
+      SENSOR_ID: sensor2
+      MQHOST: snkbroker
